@@ -33,10 +33,36 @@ function convert_gcode() {
 
         if ($didUpload) {
           echo "G code " . basename($fileName) . " has been uploaded";
-		  convert_gcode_file($uploadPath);
+		  convert_gcode_file($uploadDirectory, $fileName);
         } else {
           echo "An error occurred. Please contact the administrator.";
         }
+    }
+}
+
+function convert_gcode_file($filePath, $fileName) {
+    $fileData = function($filePath, $fileName) {
+        $file = fopen($filePath . $fileName, 'r');
+
+        if (!$file)
+            die('File does not exist or cannot be opened');
+
+        while (($line = fgets($file)) !== false) {
+            yield $line;
+        }
+
+        fclose($file);
+    };
+
+	$convertedDirPath = "./wp-content/uploads/g-code-files/converted/";
+    foreach ($fileData($filePath, $fileName) as $line) {
+        $pattern = '(.*Z\d.*)';
+        $converted = preg_replace($pattern, 'M05', $line);
+
+        $pattern = '(.*Z\-.*)';
+        $converted = preg_replace($pattern, 'M3S030', $line);
+
+        file_put_contents($convertedDirPath . $fileName, $converted, FILE_APPEND);
     }
 }
 

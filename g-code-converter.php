@@ -16,12 +16,12 @@ function html_form_code() {
 	echo '<input type="file" name="inputFile" id="inputFile"/>';
 	echo '</p>';
 	
-	echo '<p><input type="submit" name="cf-submitted" value="Convert"></p>';
+	echo '<p><input type="submit" name="gcode-submitted" value="Convert"></p>';
 	echo '</form>';
 }
 
 function convert_gcode() {
-    if (isset($_POST['cf-submitted'])) {
+    if (isset($_POST['gcode-submitted'])) {
 		$uploadDirectory = "./wp-content/uploads/g-code-files/";
 
 		$fileName = $_FILES['inputFile']['name'];
@@ -32,7 +32,6 @@ function convert_gcode() {
         $didUpload = move_uploaded_file($fileTmpName, $uploadPath);
 
         if ($didUpload) {
-          echo "G code " . basename($fileName) . " has been uploaded";
 		  convert_gcode_file($uploadDirectory, $fileName);
         } else {
           echo "An error occurred. Please contact the administrator.";
@@ -44,9 +43,9 @@ function convert_gcode_file($filePath, $fileName) {
     $fileData = function($filePath, $fileName) {
         $file = fopen($filePath . $fileName, 'r');
 
-        if (!$file)
+        if (!$file) {
             die('File does not exist or cannot be opened');
-
+        }
         while (($line = fgets($file)) !== false) {
             yield $line;
         }
@@ -55,25 +54,32 @@ function convert_gcode_file($filePath, $fileName) {
     };
 
 	$convertedDirPath = "./wp-content/uploads/g-code-files/converted/";
+	$file = $convertedDirPath . $fileName;
     foreach ($fileData($filePath, $fileName) as $line) {
-        $pattern = '(.*Z\d.*)';
-        $converted = preg_replace($pattern, 'M05', $line);
+        $Zdpattern = '(.*Z\d.*)';
+        $Z_pattern = '(.*Z\-.*)';
+        if (preg_match($Zdpattern, $line)) {
+            $line = 'M05' . "\r\n";
+        } else if (preg_match($Z_pattern, $line)) {
+            $line = 'M3S030' . "\r\n";
+        }
 
-        $pattern = '(.*Z\-.*)';
-        $converted = preg_replace($pattern, 'M3S030', $line);
-
-        file_put_contents($convertedDirPath . $fileName, $converted, FILE_APPEND);
+        file_put_contents($file, $line, FILE_APPEND);
     }
+
+	echo '<form action="/wp-content/uploads/g-code-files/converted/' . $fileName . '">';
+    echo '<input type="submit" value="Download" /> </form>';
+
 }
 
-function cf_shortcode() {
+function gcode_converter_shortcode() {
 	ob_start();
-	convert_gcode();
 	html_form_code();
+	convert_gcode();
 
 	return ob_get_clean();
 }
 
-add_shortcode( 'sitepoint_contact_form', 'cf_shortcode' );
+add_shortcode( 'gcode_converter', 'gcode_converter_shortcode' );
 
 ?>

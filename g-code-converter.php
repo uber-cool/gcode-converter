@@ -30,8 +30,8 @@ function html_form_code() {
 
 				var fileName = uploadField.value;
 				var extension = fileName.substring(fileName.lastIndexOf(\'.\') + 1);
-				if(extension != \'nc\') {
-				   alert("File type not supported (Only .nc file is supported)" + fileName);
+				if(extension != \'nc\' && extension != \'gcode\') {
+				   alert("File type not supported (Only .nc and .gcode files are supported)");
 				   this.value = "";
 				}
 		    };
@@ -41,6 +41,7 @@ function html_form_code() {
 function convert_gcode() {
     if (isset($_POST['gcode-submitted'])) {
 		$uploadDirectory = "./wp-content/uploads/g-code-files/";
+    	wp_mkdir_p($uploadDirectory . "converted");
 
 		$fileName = $_FILES['inputFile']['name'];
 		$fileTmpName  = $_FILES['inputFile']['tmp_name'];
@@ -88,6 +89,13 @@ function convert_gcode_file($filePath, $fileName) {
 	echo '<form action="/wp-content/uploads/g-code-files/converted/' . $fileName . '">';
     echo '<input type="submit" value="Download" /> </form>';
 }
+
+function gcode_converter_activated() {
+    $upload_path = "./../wp-content/uploads/g-code-files/converted";
+    wp_mkdir_p($upload_path);
+}
+
+//register_activation_hook( __FILE__, 'gcode_converter_activated' );
 
 function gcode_converter_shortcode() {
 	ob_start();
